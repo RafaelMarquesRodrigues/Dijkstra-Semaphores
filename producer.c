@@ -1,56 +1,47 @@
 #include "resources.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <pthread.h>
-#include <time.h>
 
-//40% of chance to create a product
-int shouldCreateProduct(){
-	return rand()%100 < 80 ? 1 : 0;
+void createProduct(){
+	buffer++;
 }
 
-int createProduct(){
-	return 1;
-}
-
-void decreaseEmpty(){
-	//if the buffer is full, waits until its empty to produce more
-	while(full == MAX_BUFFER){
-		printf("PRODUCER: Buffer is max. Waiting...\n");
-		pthread_cond_wait(&condProducer, &mutex);
-	}
-	
-	empty = empty - 1;
-	
-	printf("PRODUCER: Created my product !\n");
-	printf("PRODUCER:Empty space %d\n", empty);
-}
-
-void increaseFull(){
+void pdown(){
 	full++;
-	printf("PRODUCER: Full space %d\n", full);
-	pthread_cond_signal(&condConsumer);
+}
+
+void pup(){
+	empty--;
+
+	if(cQueueSize > 0){
+		cQueueSize--;
+		printf("waking up consumer\n");
+		pthread_cond_signal(&cQueue[cQueueSize]);
+	}
 }
 
 void *runProducer(){
-	srand(time(NULL));
-	int product;
-
 	while(TRUE){
-		if(shouldCreateProduct()){
-			down("producer");
+			pthread_mutex_lock(&mutex);
+			
+			while(full == MAX_BUFFER){
+				pQueueSize++;
+				printf("producer waiting\n");
+				pthread_cond_wait(&pQueue[pQueueSize - 1], &mutex);
+				printf("producer released\n");
+			}
+			
+				pdown();
 
-			//all changes to shared content is made while the mutex is locked
-			decreaseEmpty();
-			product = createProduct();
-			buffer[full + 1] = product;
-			increaseFull();	
-
-			sleep(2);
-			up("producer");
+				bufferInUse++;
+				createProduct();
+				bufferInUse--;
+				printf("producer %d %d\n", full, empty);
+				
+				pup();	
+			pthread_mutex_unlock(&mutex);
 		}
-	}
 
 	pthread_exit(NULL);
 } 

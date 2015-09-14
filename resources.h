@@ -1,21 +1,23 @@
-#ifndef _RESOURCES_H_
-#define _RESOURCES_H_
+#ifndef _resources_H_
+#define _resources_H_
 
 #include <pthread.h>
 
-#define MAX_BUFFER 5
-#define MAX_THREADS 2
+#define MAX_BUFFER 6
+#define MAX_CONSUMERS 10
+#define MAX_PRODUCERS 10
 #define TRUE 1
 #define FALSE 0
 
-pthread_cond_t condProducer;
-pthread_cond_t condConsumer;
-pthread_mutex_t mutex;
-int full;
 int empty;
-int buffer[MAX_BUFFER];
+int full;
+int buffer;
+int bufferInUse;
 
-void down(char *);
-void up(char *);
+int pQueueSize;
+int cQueueSize;
+pthread_mutex_t mutex;
+pthread_cond_t pQueue[MAX_PRODUCERS];
+pthread_cond_t cQueue[MAX_CONSUMERS];
 
 #endif

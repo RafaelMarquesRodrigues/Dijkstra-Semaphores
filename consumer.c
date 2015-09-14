@@ -1,54 +1,45 @@
 #include "resources.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <unistd.h>
 #include <pthread.h>
 
-int shouldConsumeProduct(){
-	return rand()%100 < 40 ? 1 : 0;
-}
-
 void removeProduct(){
-	buffer[full] = 0;
+	buffer--;
 }
 
-void decreaseFull(){
-	while(full == 0){
-		printf("CONSUMER: No products. Waiting...\n");
-		pthread_cond_wait(&condConsumer, &mutex);
-	}
-
+void cdown(){
 	full--;
-
-	printf("CONSUMER: Got my product !\n");
-	printf("CONSUMER: Full space %d\n", full);
 }
 
-void increaseEmpty(){
+void cup(){
 	empty++;
-	
-	//signals the producer the buffer is not full
-	pthread_cond_signal(&condProducer);
 
-	printf("CONSUMER: Empty space %d\n", empty);
+	if(pQueueSize > 0){
+		pQueueSize--;
+		printf("waking up producer\n");
+		pthread_cond_signal(&pQueue[pQueueSize]);
+	}
 }
 
 void *runConsumer(){
-	srand(time(NULL));
-
 	while(TRUE){
-		if(shouldConsumeProduct()){
-			down("consumer");
+			pthread_mutex_lock(&mutex);
 
-			//all changes to shared content is made while the mutex is locked
-			decreaseFull();
-			removeProduct();
-			increaseEmpty();
+			while(full == 0){
+				cQueueSize++;
+				printf("consumer waiting\n");
+				pthread_cond_wait(&cQueue[cQueueSize - 1], &mutex);
+				printf("consumer ok\n");
+			}
+				cdown();
 
-			sleep(2);
-			up("consumer");
-		}
+				bufferInUse++;
+				removeProduct();
+				bufferInUse--;
+				printf("consumer %d %d\n", full, empty);
+				
+				cup();
+			pthread_mutex_unlock(&mutex);
 	}
 
 	pthread_exit(NULL);
