@@ -15,9 +15,10 @@ Semaphore empty = MAX_BUFFER;
 Semaphore full = 0;
 Semaphore s = 1;
 
+pthread_mutex_t mutexEmpty;
 pthread_cond_t emptyCond;
 
-pthread_mutex_t mutexBuffer;
+pthread_mutex_t mutexFull;
 pthread_cond_t fullCond;
 
 pthread_mutex_t mutex;
@@ -50,11 +51,11 @@ void removeProduct(){
 
 void *runConsumer(){
 	while(TRUE){
-        down(&full, &fullCond, &mutexBuffer, "consumer");
+        down(&full, &fullCond, &mutex, "consumer");
         down(&s, &consumerCond, &mutex, "consumer");
         removeProduct();
         up(&s, &producerCond, &mutex, "consumer");
-        up(&empty, &emptyCond, &mutexBuffer, "consumer");
+        up(&empty, &emptyCond, &mutex, "consumer");
     }
 
 	pthread_exit(NULL);
@@ -66,11 +67,11 @@ void createProduct(){
 
 void *runProducer(){
 	while(TRUE){
-        down(&empty, &emptyCond, &mutexBuffer, "producer");
+        down(&empty, &emptyCond, &mutex, "producer");
         down(&s, &producerCond, &mutex, "producer");
         createProduct();
         up(&s, &consumerCond, &mutex, "producer");
-        up(&full, &fullCond, &mutexBuffer, "producer");
+        up(&full, &fullCond, &mutex, "producer");
     }
 
 	pthread_exit(NULL);
@@ -95,7 +96,8 @@ int main(int argc, char *argv[]){
 
 	//initializes the mutex
 	pthread_mutex_init(&mutex, NULL);
-	pthread_mutex_init(&mutexBuffer, NULL);
+	pthread_mutex_init(&mutexEmpty, NULL);
+	pthread_mutex_init(&mutexFull, NULL);
 	
 	for(i = 0; i < MAX_CONSUMERS; i++)
 		pthread_cond_init(&consumers[i], NULL);
