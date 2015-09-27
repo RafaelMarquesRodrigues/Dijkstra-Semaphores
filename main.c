@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#define MAX_BUFFER 1
+#define MAX_BUFFER 10
 #define MAX_CONSUMERS 1
 #define MAX_PRODUCERS 1
 #define TRUE 1
@@ -98,9 +98,9 @@ int main(int argc, char *argv[]){
 	pthread_mutex_init(&mutexBuffer, NULL);
 	
 	for(i = 0; i < MAX_CONSUMERS; i++)
-		pthread_cond_init(&consumers[i], NULL);
+		pthread_cond_init((void *) &(consumers[i]), NULL);
 	for(i = 0; i < MAX_PRODUCERS; i++)
-		pthread_cond_init(&producers[i], NULL);
+		pthread_cond_init((void *) &producers[i], NULL);
 
 	//initializes the funcion to check for critical access problem
 	pthread_create(&checker, NULL, runCheck, (void *) t);
