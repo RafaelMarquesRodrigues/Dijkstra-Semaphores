@@ -16,9 +16,9 @@ Semaphore full = 0;
 Semaphore s = 1;
 
 pthread_cond_t emptyCond;
+pthread_cond_t fullCond;
 
 pthread_mutex_t mutexBuffer;
-pthread_cond_t fullCond;
 
 pthread_mutex_t mutex;
 pthread_cond_t consumerCond;
@@ -50,9 +50,14 @@ void removeProduct(){
 
 void *runConsumer(){
 	while(TRUE){
-        down(&full, &fullCond, &mutexBuffer, "consumer");
-        down(&s, &consumerCond, &mutex, "consumer");
+        down(&full, &fullCond, &mutexBuffer, "consumer");//try to enter the buffer amount area
+        down(&s, &consumerCond, &mutex, "consumer");//try to enter the buffer area
+ 
+        bufferInUse++;
         removeProduct();
+        printf("%d\n", buffer);
+        bufferInUse--;
+ 
         up(&s, &producerCond, &mutex, "consumer");
         up(&empty, &emptyCond, &mutexBuffer, "consumer");
     }
@@ -68,7 +73,12 @@ void *runProducer(){
 	while(TRUE){
         down(&empty, &emptyCond, &mutexBuffer, "producer");
         down(&s, &producerCond, &mutex, "producer");
+        
+        bufferInUse++;
         createProduct();
+        printf("%d\n", buffer);
+        bufferInUse--;
+        
         up(&s, &consumerCond, &mutex, "producer");
         up(&full, &fullCond, &mutexBuffer, "producer");
     }
@@ -79,7 +89,6 @@ void *runProducer(){
 //function to check if there is, in a given moment, more than 1 thread in the same critical region
 void *runCheck(){
 	while(TRUE){
-        printf("%d\n", buffer);
 		if(bufferInUse > 1)
 			printf("Critical region problem\n");
 	}
